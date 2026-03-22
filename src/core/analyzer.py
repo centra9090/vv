@@ -96,7 +96,7 @@ class RawDataAnalyzer:
                 continue
             grouped = data.groupby(col)[target_col].agg(['mean', 'std', 'count', 'sum']).reset_index()
             grouped['variance'] = grouped['std'] ** 2
-            grouped['impact_score'] = grouped['sum'] * grouped['count']
+            grouped['impact_score'] = grouped['mean'] * np.sqrt(grouped['count'])
             grouped['group_by'] = col
             results.append(grouped)
 

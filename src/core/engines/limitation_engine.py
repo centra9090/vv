@@ -1,12 +1,13 @@
 from typing import Dict, List, Any, Optional
 import pandas as pd
 from datetime import datetime, timedelta
+from ..utils.helpers import detect_outliers_iqr
 
 class LimitationEngine:
     """Engine for detecting limitations and potential issues in analysis."""
 
-    def __init__(self):
-        pass
+    def __init__(self, expected_dimensions: Optional[List[str]] = None):
+        self.expected_dimensions = expected_dimensions or ['product', 'region', 'channel', 'customer_segment']
 
     def detect_limitations(self, data: pd.DataFrame, metric: str,
                           date_col: str = 'date') -> List[Dict[str, Any]]:
@@ -122,14 +123,12 @@ class LimitationEngine:
 
         # Check for extreme outliers
         if data[metric].dtype in ['int64', 'float64']:
-            q1, q3 = data[metric].quantile([0.25, 0.75])
-            iqr = q3 - q1
-            outliers = data[(data[metric] < q1 - 3*iqr) | (data[metric] > q3 + 3*iqr)]
-            if len(outliers) > len(data) * 0.05:
+            outliers = detect_outliers_iqr(data[metric])
+            if outliers.sum() > len(data) * 0.05:
                 limitations.append({
                     'type': 'extreme_outliers',
                     'severity': 'medium',
-                    'description': f'{len(outliers)} extreme outliers detected ({len(outliers)/len(data):.1%})',
+                    'description': f'{outliers.sum()} extreme outliers detected ({outliers.sum()/len(data):.1%})',
                     'impact': 'Outliers may skew analysis results'
                 })
 
@@ -140,7 +139,7 @@ class LimitationEngine:
         limitations = []
 
         # Common business dimensions
-        expected_dimensions = ['product', 'region', 'channel', 'customer_segment']
+        expected_dimensions = self.expected_dimensions
         present_dimensions = [col for col in expected_dimensions if col in data.columns]
 
         missing_dimensions = [dim for dim in expected_dimensions if dim not in data.columns]

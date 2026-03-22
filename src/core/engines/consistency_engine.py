@@ -1,6 +1,7 @@
 from typing import Dict, List, Any, Optional
 import pandas as pd
 import numpy as np
+from ..utils.helpers import detect_outliers_zscore
 
 class ConsistencyEngine:
     """Engine for checking consistency across analysis results."""
@@ -138,19 +139,16 @@ class ConsistencyEngine:
             if col in ['date', 'index']:
                 continue
 
-            # Simple outlier detection
+# Outlier detection using z-score
             if len(data) > 10:
-                mean_val = data[col].mean()
-                std_val = data[col].std()
-                if std_val > 0:
-                    outliers = data[abs(data[col] - mean_val) > 3 * std_val]
-                    if len(outliers) > len(data) * 0.1:  # More than 10% outliers
-                        checks.append({
-                            'check_type': 'data_quality',
-                            'component': f'{col}_outliers',
-                            'status': 'warning',
-                            'severity': 'warning',
-                            'message': f'Column {col} has {len(outliers)} outliers ({len(outliers)/len(data):.1%} of data)'
+                outliers = detect_outliers_zscore(data[col])
+                if outliers.sum() > len(data) * 0.1:  # More than 10% outliers
+                    checks.append({
+                        'check_type': 'data_quality',
+                        'component': f'{col}_outliers',
+                        'status': 'warning',
+                        'severity': 'warning',
+                        'message': f'Column {col} has {outliers.sum()} outliers ({outliers.sum()/len(data):.1%} of data)'
                         })
 
         return checks

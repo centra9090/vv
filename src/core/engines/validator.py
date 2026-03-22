@@ -89,8 +89,8 @@ class Validator:
         normalized = text.lower().strip()
 
         patterns = [
-            r'(?P<metric>\w+)\s+(?P<dir>dropped|decreased|fell|declined)\s+(?:by\s+)?(?P<value>\d+(?:\.\d+)?)%',
-            r'(?P<metric>\w+)\s+(?P<dir>increased|rose|grew|improved)\s+(?:by\s+)?(?P<value>\d+(?:\.\d+)?)%',
+            r'(?P<metric>\w+)\s+(?P<dir>dropped|decreased|fell|declined|turun|menurun|jatuh)\s+(?:by\s+)?(?P<value>\d+(?:\.\d+)?)%',
+            r'(?P<metric>\w+)\s+(?P<dir>increased|rose|grew|improved|naik|meningkat|bertambah)\s+(?:by\s+)?(?P<value>\d+(?:\.\d+)?)%',
             r'(?P<metric>\w+)\s+changed\s+(?:by\s+)?(?P<value>-?\d+(?:\.\d+)?)%'
         ]
 
@@ -101,9 +101,9 @@ class Validator:
                 value = float(m.group('value'))
                 direction = m.groupdict().get('dir')
 
-                if direction in ['dropped', 'decreased', 'fell', 'declined']:
+                if direction in ['dropped', 'decreased', 'fell', 'declined', 'turun', 'menurun', 'jatuh']:
                     value = -abs(value)
-                elif direction in ['increased', 'rose', 'grew', 'improved']:
+                elif direction in ['increased', 'rose', 'grew', 'improved', 'naik', 'meningkat', 'bertambah']:
                     value = abs(value)
 
                 return metric, value

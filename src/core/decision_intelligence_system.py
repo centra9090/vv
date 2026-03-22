@@ -25,7 +25,7 @@ class DecisionIntelligenceSystem:
         self.consistency_engine = ConsistencyEngine()
         self.audit_trail = AuditTrail()
 
-    def analyze_insight(self, insight_text: str, dataset_name: str, date_col: str = 'date') -> AnalysisResult:
+    def analyze_insight(self, insight_text: str, dataset_name: str, date_col: str = 'date', metric: str = 'sales') -> AnalysisResult:
         analysis_id = str(uuid.uuid4())
         result = AnalysisResult.create(analysis_id, insight_text)
 
@@ -34,26 +34,26 @@ class DecisionIntelligenceSystem:
             result.validation = {'status': 'error', 'explanation': 'dataset not found'}
             return result
 
-        self.audit_trail.log_operation('data_loaded', {'dataset': dataset_name, 'rows': len(data)})
+        self.audit_trail.log_operation('data_loaded', {'dataset': dataset_name, 'rows': len(data)}, analysis_id)
 
         result.metrics = {
             'summary': self.analyzer.statistical_summary(data),
-            'trend': self.analyzer.trend_analysis(data, date_col, 'sales'),
-            'pct_change': self.analyzer.percentage_change(data, date_col, 'sales').tolist()
+            'trend': self.analyzer.trend_analysis(data, date_col, metric),
+            'pct_change': self.analyzer.percentage_change(data, date_col, metric).tolist()
         }
 
         validation_result = self.validator.validate_insight(insight_text, dataset_name, date_col)
         result.validation = validation_result.__dict__
 
-        root_cause_result = self.root_cause.find_root_causes(dataset_name, 'sales', [c for c in data.columns if c not in [date_col, 'sales']])
+        root_cause_result = self.root_cause.find_root_causes(dataset_name, metric, [c for c in data.columns if c not in [date_col, metric]])
         result.root_cause = root_cause_result
 
-        decision_actions = self.decision_engine.generate_decisions(validation_result, root_cause_result, result.metrics['trend'], len(data[data['sales'].isnull()]), len(data))
+        decision_actions = self.decision_engine.generate_decisions(validation_result, root_cause_result, result.metrics['trend'], len(data[data[metric].isnull()]), len(data))
         result.decision = {'actions': [a.__dict__ for a in decision_actions], 'summary': self.decision_engine.get_decision_summary(decision_actions)}
 
-        result.confidence = self.confidence_engine.score_confidence(data, 'sales', validation_result, root_cause_result)
+        result.confidence = self.confidence_engine.score_confidence(data, metric, validation_result, root_cause_result)
 
-        limitations = self.limitation_engine.detect_limitations(data, 'sales', date_col)
+        limitations = self.limitation_engine.detect_limitations(data, metric, date_col)
         result.limitations = [l['description'] for l in limitations]
 
         result.consistency_checks = self.consistency_engine.check_consistency(data, validation_result, root_cause_result, result.metrics['trend'])

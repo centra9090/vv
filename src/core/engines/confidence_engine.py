@@ -1,6 +1,7 @@
 from typing import Dict, List, Any, Optional
 import pandas as pd
 import numpy as np
+from ..utils.helpers import detect_outliers_zscore
 
 class ConfidenceEngine:
     """Engine for assessing confidence in analysis results."""
@@ -58,8 +59,8 @@ class ConfidenceEngine:
 
         # Check for data consistency (no extreme outliers)
         if len(data) > 10:
-            z_scores = np.abs((data[metric] - data[metric].mean()) / data[metric].std())
-            outlier_pct = (z_scores > 3).mean()
+            outliers = detect_outliers_zscore(data[metric])
+            outlier_pct = outliers.mean()
             quality_score -= outlier_pct * 0.3
 
         return max(0.0, min(1.0, quality_score))

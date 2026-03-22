@@ -52,9 +52,12 @@ class RootCauseEngine:
                 })
 
         # Calculate percentage contributions
-        if total_change != 0:
+        if abs(total_change) > 1e-6:  # Near-zero guard
             for contrib in contributions:
                 contrib['contribution_pct'] = (contrib['change'] / abs(total_change)) * 100
+        else:
+            for contrib in contributions:
+                contrib['contribution_pct'] = 0.0
 
         # Sort by absolute contribution
         contributions.sort(key=lambda x: abs(x['change']), reverse=True)

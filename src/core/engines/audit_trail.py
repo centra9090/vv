@@ -1,6 +1,6 @@
 from typing import Dict, List, Any, Optional
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from dataclasses import dataclass, asdict
 
 @dataclass
@@ -21,7 +21,7 @@ class AuditTrail:
                      analysis_id: Optional[str] = None) -> None:
         """Log an operation with details."""
         entry = AuditEntry(
-            timestamp=datetime.now(),
+            timestamp=datetime.now(timezone.utc),
             operation=operation,
             details=details,
             analysis_id=analysis_id
